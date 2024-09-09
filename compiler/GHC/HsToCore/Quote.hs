@@ -997,6 +997,7 @@ rep_sig (L loc (SpecSig _ nm tys ispec))
   = concatMapM (\t -> rep_specialise nm t ispec (locA loc)) tys
 rep_sig (L loc (SpecInstSig _ ty))  = rep_specialiseInst ty (locA loc)
 rep_sig (L _   (MinimalSig {}))       = notHandled ThMinimalPragmas
+-- rep_sig (L loc (AutodiffSig _ nm str _)) = rep_autodiff nm str ispec (locA loc)
 rep_sig (L loc (SCCFunSig _ nm str)) = rep_sccFun nm str (locA loc)
 rep_sig (L loc (CompleteMatchSig _ cls mty))
   = rep_complete_sig cls mty (locA loc)
@@ -1120,6 +1121,21 @@ rep_specialiseInst ty loc
   = do { ty1    <- repHsSigType ty
        ; pragma <- repPragSpecInst ty1
        ; return [(loc, pragma)] }
+
+-- rep_autodiff :: LocatedN Name
+--         -> FastString
+--         -> SrcSpan
+--         -> MetaM [(SrcSpan, Core (M TH.Dec))]
+-- rep_autodiff nm Nothing loc = do
+--   nm1 <- lookupLOcc nm
+--   scc <- repPragAutodiff nm1
+--   return [(loc, scc)]
+
+-- rep_autodiff nm (Just (L _ str)) loc = do
+--   nm1 <- lookupLOcc nm
+--   str1 <- coreStringLit (sl_fs str)
+--   scc <- repPragAutodiffNamed nm1 str1
+--   return [(loc, scc)]
 
 rep_sccFun :: LocatedN Name
         -> Maybe (XRec GhcRn StringLiteral)
@@ -2724,6 +2740,12 @@ repPragRule (MkC nm) (MkC ty_bndrs) (MkC tm_bndrs) (MkC lhs) (MkC rhs) (MkC phas
 
 repPragAnn :: Core TH.AnnTarget -> Core (M TH.Exp) -> MetaM (Core (M TH.Dec))
 repPragAnn (MkC targ) (MkC e) = rep2 pragAnnDName [targ, e]
+
+repPragAutodiff :: Core TH.Name -> MetaM (Core (M TH.Dec))
+repPragAutodiff (MkC nm) = rep2 pragAutodiffDName [nm]
+
+repPragAutodiffNamed :: Core TH.Name -> Core String -> MetaM (Core (M TH.Dec))
+repPragAutodiffNamed (MkC nm) (MkC str) = rep2 pragAutodiffNamedDName [nm, str]
 
 repPragSCCFun :: Core TH.Name -> MetaM (Core (M TH.Dec))
 repPragSCCFun (MkC nm) = rep2 pragSCCFunDName [nm]

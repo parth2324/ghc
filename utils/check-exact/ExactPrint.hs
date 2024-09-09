@@ -2800,6 +2800,14 @@ instance ExactPrint (Sig GhcPs) where
     an1 <- markEpAnnLMS'' an0 lidl AnnClose (Just "#-}")
     return (MinimalSig (an1,src) formula')
 
+  exact (AutodiffSig (an,src) ln dl inl) = do
+    an0 <- markAnnOpen an (inl_src inl) "{-# AUTODIFF"
+    an1 <- markActivation an0 id (inl_act inl)
+    ln' <- markAnnotated ln
+    dl' <- markAnnotated dl
+    an2 <- markEpAnnLMS'' an1 lidl AnnClose (Just "#-}")
+    return (AutodiffSig (an2,src) ln' ml' inl)
+
   exact (SCCFunSig (an,src) ln ml) = do
     an0 <- markAnnOpen an src "{-# SCC"
     ln' <- markAnnotated ln

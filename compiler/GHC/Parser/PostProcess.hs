@@ -24,6 +24,7 @@ module GHC.Parser.PostProcess (
         mkTyFamInst,
         mkFamDecl,
         mkInlinePragma,
+        mkAutodiffNoinlinePragma,
         mkOpaquePragma,
         mkPatSynMatchGroup,
         mkRecConstrOrUpdate,
@@ -2731,6 +2732,15 @@ mkInlinePragma src (inl, match_info) mb_act
                           NoInline _  -> NeverActive
                           Opaque _    -> NeverActive
                           _other      -> AlwaysActive
+
+mkAutodiffNoinlinePragma :: SourceText
+                 -> InlinePragma
+mkAutodiffNoinlinePragma src
+  = InlinePragma { inl_src    = src
+                 , inl_inline = Opaque src
+                 , inl_sat    = Nothing
+                 , inl_act    = NeverActive
+                 , inl_rule   = FunLike }
 
 mkOpaquePragma :: SourceText -> InlinePragma
 mkOpaquePragma src

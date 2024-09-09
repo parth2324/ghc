@@ -1133,6 +1133,10 @@ renameSig ctxt sig@(PatSynSig _ vs ty)
     ty_ctxt = GenericCtx (text "a pattern synonym signature for"
                           <+> ppr_sig_bndrs vs)
 
+renameSig ctxt sig@(AutodiffSig (_, st) v s inl)
+  = do  { new_v <- lookupSigOccRnN ctxt sig v
+        ; return (AutodiffSig (noAnn, st) new_v s inl, emptyFVs) }
+
 renameSig ctxt sig@(SCCFunSig (_, st) v s)
   = do  { new_v <- lookupSigOccRnN ctxt sig v
         ; return (SCCFunSig (noAnn, st) new_v s, emptyFVs) }
@@ -1207,6 +1211,9 @@ okHsSig ctxt (L _ sig)
      (MinimalSig {}, ClsDeclCtxt {}) -> True
      (MinimalSig {}, _)              -> False
 
+     (AutodiffSig {}, HsBootCtxt {}) -> False
+     (AutodiffSig {}, _)             -> True
+
      (SCCFunSig {}, HsBootCtxt {}) -> False
      (SCCFunSig {}, _)             -> True
 
@@ -1237,6 +1244,7 @@ findDupSigs sigs
     expand_sig sig@(TypeSig _ ns _)              = [(n,sig) | n <- ns]
     expand_sig sig@(ClassOpSig _ _ ns _)         = [(n,sig) | n <- ns]
     expand_sig sig@(PatSynSig _ ns  _ )          = [(n,sig) | n <- ns]
+    expand_sig sig@(AutodiffSig (_, _) n _ _)       = [(n,sig)]
     expand_sig sig@(SCCFunSig (_, _) n _)           = [(n,sig)]
     expand_sig _ = []
 
@@ -1247,6 +1255,7 @@ findDupSigs sigs
     mtch (TypeSig {})          (TypeSig {})        = True
     mtch (ClassOpSig _ d1 _ _) (ClassOpSig _ d2 _ _) = d1 == d2
     mtch (PatSynSig _ _ _)     (PatSynSig _ _ _)   = True
+    mtch (AutodiffSig _ _ dl1 _) (AutodiffSig _ _ dl2 _) = dl1 == dl2
     mtch (SCCFunSig{})         (SCCFunSig{})       = True
     mtch _ _ = False
 

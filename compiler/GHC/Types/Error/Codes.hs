@@ -194,6 +194,7 @@ type family GhcDiagnosticCode c = n | n -> c where
   GhcDiagnosticCode "PsErrInvalidInfixHole"                         = 45106
   GhcDiagnosticCode "PsErrExpectedHyphen"                           = 44524
   GhcDiagnosticCode "PsErrSpaceInSCC"                               = 76176
+  GhcDiagnosticCode "PsErrSpaceInAutoDiff"                          = 76177
   GhcDiagnosticCode "PsErrEmptyDoubleQuotes"                        = 11861
   GhcDiagnosticCode "PsErrLambdaCase"                               = 51179
   GhcDiagnosticCode "PsErrEmptyLambda"                              = 71614

@@ -49,6 +49,7 @@ import GHC.Types.SrcLoc as SrcLoc
 import GHC.Types.Var
 import GHC.Data.Bag
 import GHC.Data.BooleanFormula (LBooleanFormula)
+import GHC.Data.FastString (unpackFS)
 import GHC.Types.Name.Reader
 import GHC.Types.Name
 
@@ -713,6 +714,7 @@ type instance XInlineSig        (GhcPass p) = [AddEpAnn]
 type instance XSpecSig          (GhcPass p) = [AddEpAnn]
 type instance XSpecInstSig      (GhcPass p) = ([AddEpAnn], SourceText)
 type instance XMinimalSig       (GhcPass p) = ([AddEpAnn], SourceText)
+type instance XAutodiffSig      (GhcPass p) = ([AddEpAnn], SourceText)
 type instance XSCCFunSig        (GhcPass p) = ([AddEpAnn], SourceText)
 type instance XCompleteMatchSig (GhcPass p) = ([AddEpAnn], SourceText)
     -- SourceText: Note [Pragma source text] in "GHC.Types.SourceText"
@@ -844,6 +846,14 @@ ppr_sig (MinimalSig (_, src) bf)
   = pragSrcBrackets src "{-# MINIMAL" (pprMinimalSig bf)
 ppr_sig (PatSynSig _ names sig_ty)
   = text "pattern" <+> pprVarSig (map unLoc names) (ppr sig_ty)
+ppr_sig (AutodiffSig _ fn dervname inl)
+  = pragSrcBrackets (inlinePragmaSource inl) "{-# AUTODIFF" (pprInline inl <+> 
+      ppr_fn <+> text (unpackFS dervname))
+        where
+          ppr_fn = case ghcPass @p of
+            GhcPs -> ppr fn
+            GhcRn -> ppr fn
+            GhcTc -> ppr fn
 ppr_sig (SCCFunSig (_, src) fn mlabel)
   = pragSrcBrackets src "{-# SCC" (ppr_fn <+> maybe empty ppr mlabel )
       where
@@ -879,6 +889,7 @@ hsSigDoc (InlineSig _ _ prag)   = (inlinePragmaName . inl_inline $ prag) <+> tex
 hsSigDoc (SpecInstSig (_, src) _)  = text (extractSpecPragName src) <+> text "instance pragma"
 hsSigDoc (FixSig {})            = text "fixity declaration"
 hsSigDoc (MinimalSig {})        = text "MINIMAL pragma"
+hsSigDoc (AutodiffSig {})       = text "AUTODIFF pragma"
 hsSigDoc (SCCFunSig {})         = text "SCC pragma"
 hsSigDoc (CompleteMatchSig {})  = text "COMPLETE pragma"
 hsSigDoc (XSig _)               = case ghcPass @p of

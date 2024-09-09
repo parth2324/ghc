@@ -407,6 +407,9 @@ data PsMessage
    -- | Found a space in a SCC
    | PsErrSpaceInSCC
 
+   -- | Found space in derivative function name passed to AutoDiff
+   | PsErrSpaceInAutoDiff
+
    -- | Found two single quotes
    | PsErrEmptyDoubleQuotes !Bool
                             -- ^ Is TH on?

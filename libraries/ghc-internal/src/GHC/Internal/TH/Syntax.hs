@@ -2170,6 +2170,8 @@ data Pragma = InlineP         Name Inline RuleMatch Phases
             -- ^ @{ {\-\# LINE n "file name" #-} }@
             | CompleteP       [Name] (Maybe Name)
                 -- ^ @{ {\-\# COMPLETE C_1, ..., C_i [ :: T ] \#-} }@
+            | AutodiffP       Name (Maybe String)
+                -- ^ @{ {\-\# AUTODIFF fun "derivative_name" \#-} }@
             | SCCP            Name (Maybe String)
                 -- ^ @{ {\-\# SCC fun "optional_name" \#-} }@
         deriving( Show, Eq, Ord, Data, Generic )

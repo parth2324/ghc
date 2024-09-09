@@ -866,6 +866,7 @@ data Token
   -- Pragmas, see  Note [Pragma source text] in "GHC.Types.SourceText"
   | ITinline_prag       SourceText InlineSpec RuleMatchInfo
   | ITopaque_prag       SourceText
+  | ITautodiff_prag     SourceText
   | ITspec_prag         SourceText                -- SPECIALISE
   | ITspec_inline_prag  SourceText Bool    -- SPECIALISE INLINE (or NOINLINE)
   | ITsource_prag       SourceText
@@ -3730,6 +3731,7 @@ oneWordPrags = Map.fromList [
                                     -- Spelling variant
      ("notinline",
          fstrtoken (\s -> (ITinline_prag (SourceText s) (NoInline (SourceText s)) FunLike))),
+     ("autodiff", fstrtoken (\s -> ITautodiff_prag (SourceText s))),
      ("opaque", fstrtoken (\s -> ITopaque_prag (SourceText s))),
      ("specialize", fstrtoken (\s -> ITspec_prag (SourceText s))),
      ("source", fstrtoken (\s -> ITsource_prag (SourceText s))),

@@ -118,6 +118,7 @@ ppSourceStats short (L _ (HsModule{ hsmodExports = exports, hsmodImports = impor
     sig_info (SpecSig {})    = (0,0,1,0,0)
     sig_info (InlineSig {})  = (0,0,0,1,0)
     sig_info (ClassOpSig {}) = (0,0,0,0,1)
+    sig_info (AutodiffSig {}) = (0,0,0,1,0)
     sig_info _               = (0,0,0,0,0)
 
     import_info :: LImportDecl GhcPs -> (Int, Int, Int, Int, Int, Int, Int)

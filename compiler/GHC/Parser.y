@@ -76,6 +76,7 @@ import GHC.Types.ForeignCall
 import GHC.Types.SourceFile
 import GHC.Types.SourceText
 import GHC.Types.PkgQual
+import GHC.Types.Name.Reader (rdrNameOcc)
 
 import GHC.Core.Type    ( Specificity(..) )
 import GHC.Core.Class   ( FunDep )
@@ -644,6 +645,7 @@ are the most common patterns, rewritten as regular expressions for clarity:
  'dependency'   { L _ ITdependency }
 
  '{-# INLINE'             { L _ (ITinline_prag _ _ _) } -- INLINE or INLINABLE
+ '{-# AUTODIFF'           { L _ (ITautodiff_prag _) }
  '{-# OPAQUE'             { L _ (ITopaque_prag _) }
  '{-# SPECIALISE'         { L _ (ITspec_prag _) }
  '{-# SPECIALISE_INLINE'  { L _ (ITspec_inline_prag _ _) }
@@ -2698,6 +2700,23 @@ sigdecl :: { LHsDecl GhcPs }
         | '{-# OPAQUE' qvar '#-}'
                 {% amsA' (sLL $1 $> $ SigD noExtField (InlineSig [mo $1, mc $3] $2
                             (mkOpaquePragma (getOPAQUE_PRAGs $1)))) }
+
+        -- Rule for passing arguments to EnzymeAD at LLVM level.
+        | '{-# AUTODIFF' qvar '#-}'
+          {% do { let dname = mkDervName $2
+                ; let prag_src = (getAUTODIFF_PRAGs $1)
+                ; amsA' (sLL $1 $> (SigD noExtField 
+                            (AutodiffSig ([mo $1, mc $3], prag_src) $2 
+                                dname (mkAutodiffNoinlinePragma prag_src)))) }}
+
+        -- Rule for passing arguments to EnzymeAD at LLVM level. Explicit derivative name.
+        | '{-# AUTODIFF' qvar STRING '#-}'
+          {% do { dname <- getDervName $3
+                ; let prag_src = (getAUTODIFF_PRAGs $1)
+                ; amsA' (sLL $1 $> (SigD noExtField 
+                            (AutodiffSig ([mo $1, mc $4], prag_src) $2 
+                                dname (mkAutodiffNoinlinePragma prag_src)))) }}
+
         | '{-# SCC' qvar '#-}'
           {% amsA' (sLL $1 $> (SigD noExtField (SCCFunSig ([mo $1, mc $3], (getSCC_PRAGs $1)) $2 Nothing))) }
 
@@ -4079,6 +4098,7 @@ getCONSYM         (L _ (ITconsym   x)) = x
 getDO             (L _ (ITdo      x)) = x
 getMDO            (L _ (ITmdo     x)) = x
 getQVARID         (L _ (ITqvarid   x)) = x
+getQVARIDNAME     (L _ (ITqvarid   (_, x))) = x
 getQCONID         (L _ (ITqconid   x)) = x
 getQVARSYM        (L _ (ITqvarsym  x)) = x
 getQCONSYM        (L _ (ITqconsym  x)) = x
@@ -4136,6 +4156,7 @@ getRULES_PRAGs        (L _ (ITrules_prag        src)) = src
 getWARNING_PRAGs      (L _ (ITwarning_prag      src)) = src
 getDEPRECATED_PRAGs   (L _ (ITdeprecated_prag   src)) = src
 getSCC_PRAGs          (L _ (ITscc_prag          src)) = src
+getAUTODIFF_PRAGs     (L _ (ITautodiff_prag     src)) = src
 getUNPACK_PRAGs       (L _ (ITunpack_prag       src)) = src
 getNOUNPACK_PRAGs     (L _ (ITnounpack_prag     src)) = src
 getANN_PRAGs          (L _ (ITann_prag          src)) = src
@@ -4177,6 +4198,15 @@ getSCC lt = do let s = getSTRING lt
                if ' ' `elem` unpackFS s
                    then addFatalError $ mkPlainErrorMsgEnvelope (getLoc lt) $ PsErrSpaceInSCC
                    else return s
+
+mkDervName :: LocatedN RdrName -> FastString
+mkDervName (L _ x) = mkFastString ("d" ++ (unpackFS (occNameFS (rdrNameOcc x))))
+
+getDervName :: Located Token -> P FastString
+getDervName lt = do let s = getSTRING lt
+                    if ' ' `elem` unpackFS s
+                        then addFatalError $ mkPlainErrorMsgEnvelope (getLoc lt) $ PsErrSpaceInAutoDiff
+                        else return s
 
 stringLiteralToHsDocWst :: Located StringLiteral -> LocatedE (WithHsDocIdentifiers StringLiteral GhcPs)
 stringLiteralToHsDocWst  sl = reLoc $ lexStringLiteral parseIdentifier sl

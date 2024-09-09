@@ -584,6 +584,12 @@ pragLineD line file = pure $ PragmaD $ LineP line file
 pragCompleteD :: Quote m => [Name] -> Maybe Name -> m Dec
 pragCompleteD cls mty = pure $ PragmaD $ CompleteP cls mty
 
+pragAutodiffD :: Quote m => Name -> m Dec
+pragAutodiffD nm = pure $ PragmaD $ AutodiffP nm Nothing
+
+pragAutodiffNamedD :: Quote m => Name -> String -> m Dec
+pragAutodiffNamedD nm str = pure $ PragmaD $ AutodiffP nm (Just str)
+
 pragSCCFunD :: Quote m => Name -> m Dec
 pragSCCFunD nm = pure $ PragmaD $ SCCP nm Nothing
 

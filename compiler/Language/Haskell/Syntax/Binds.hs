@@ -37,6 +37,7 @@ import GHC.Data.Bag (Bag)
 import GHC.Types.Basic (InlinePragma)
 
 import GHC.Data.BooleanFormula (LBooleanFormula)
+import GHC.Data.FastString (FastString)
 import GHC.Types.SourceText (StringLiteral)
 
 import Data.Void
@@ -479,6 +480,12 @@ data Sig pass
   | SCCFunSig  (XSCCFunSig pass)
                (LIdP pass)    -- Function name
                (Maybe (XRec pass StringLiteral))
+
+        -- Autodiff Pragma dedicated signature.
+  | AutodiffSig (XAutodiffSig pass)
+                (LIdP pass)                    -- Function name
+                FastString                     -- Derivative name
+                InlinePragma                   -- Expect NOINLINE
        -- | A complete match pragma
        --
        -- > {-# COMPLETE C, D [:: T] #-}
@@ -520,6 +527,7 @@ isPragLSig :: forall p. UnXRec p => LSig p -> Bool
 -- Identifies pragmas
 isPragLSig (unXRec @p -> SpecSig {})   = True
 isPragLSig (unXRec @p -> InlineSig {}) = True
+isPragLSig (unXRec @p -> AutodiffSig {}) = True
 isPragLSig (unXRec @p -> SCCFunSig {}) = True
 isPragLSig (unXRec @p -> CompleteMatchSig {}) = True
 isPragLSig _                    = False
@@ -527,11 +535,16 @@ isPragLSig _                    = False
 isInlineLSig :: forall p. UnXRec p => LSig p -> Bool
 -- Identifies inline pragmas
 isInlineLSig (unXRec @p -> InlineSig {}) = True
+isInlineLSig (unXRec @p -> AutodiffSig {}) = True
 isInlineLSig _                    = False
 
 isMinimalLSig :: forall p. UnXRec p => LSig p -> Bool
 isMinimalLSig (unXRec @p -> MinimalSig {}) = True
 isMinimalLSig _                               = False
+
+isAutodiffSig :: forall p. UnXRec p => LSig p -> Bool
+isAutodiffSig (unXRec @p -> AutodiffSig {}) = True
+isAutodiffSig _                    = False
 
 isSCCFunSig :: forall p. UnXRec p => LSig p -> Bool
 isSCCFunSig (unXRec @p -> SCCFunSig {}) = True

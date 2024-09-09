@@ -77,7 +77,7 @@ templateHaskellNames = [
     standaloneDerivWithStrategyDName, sigDName, kiSigDName, forImpDName,
     pragInlDName, pragOpaqueDName, pragSpecDName, pragSpecInlDName, pragSpecInstDName,
     pragRuleDName, pragCompleteDName, pragAnnDName, pragSCCFunDName, pragSCCFunNamedDName,
-    defaultSigDName, defaultDName,
+    pragAutodiffDName, pragAutodiffNamedDName, defaultSigDName, defaultDName,
     dataFamilyDName, openTypeFamilyDName, closedTypeFamilyDName,
     dataInstDName, newtypeInstDName, tySynInstDName,
     infixLWithSpecDName, infixRWithSpecDName, infixNWithSpecDName,
@@ -388,7 +388,8 @@ funDName, valDName, dataDName, newtypeDName, typeDataDName, tySynDName, classDNa
     dataInstDName, newtypeInstDName, tySynInstDName, dataFamilyDName,
     openTypeFamilyDName, closedTypeFamilyDName, infixLWithSpecDName,
     infixRWithSpecDName, infixNWithSpecDName, roleAnnotDName, patSynDName,
-    patSynSigDName, pragCompleteDName, implicitParamBindDName, pragOpaqueDName :: Name
+    patSynSigDName, pragCompleteDName, implicitParamBindDName, pragOpaqueDName,
+    pragAutodiffDName, pragAutodiffNamedDName :: Name
 funDName                         = libFun (fsLit "funD")                         funDIdKey
 valDName                         = libFun (fsLit "valD")                         valDIdKey
 dataDName                        = libFun (fsLit "dataD")                        dataDIdKey
@@ -413,6 +414,8 @@ pragCompleteDName                = libFun (fsLit "pragCompleteD")               
 pragAnnDName                     = libFun (fsLit "pragAnnD")                     pragAnnDIdKey
 pragSCCFunDName                  = libFun (fsLit "pragSCCFunD")                  pragSCCFunDKey
 pragSCCFunNamedDName             = libFun (fsLit "pragSCCFunNamedD")             pragSCCFunNamedDKey
+pragAutodiffDName                = libFun (fsLit "pragAutodiffD")                pragAutodiffDKey
+pragAutodiffNamedDName           = libFun (fsLit "pragAutodiffNamedD")           pragAutodiffNamedDKey
 dataInstDName                    = libFun (fsLit "dataInstD")                    dataInstDIdKey
 newtypeInstDName                 = libFun (fsLit "newtypeInstD")                 newtypeInstDIdKey
 tySynInstDName                   = libFun (fsLit "tySynInstD")                   tySynInstDIdKey
@@ -954,7 +957,8 @@ funDIdKey, valDIdKey, dataDIdKey, newtypeDIdKey, tySynDIdKey, classDIdKey,
     infixLWithSpecDIdKey, infixRWithSpecDIdKey, infixNWithSpecDIdKey,
     roleAnnotDIdKey, patSynDIdKey, patSynSigDIdKey, pragCompleteDIdKey,
     implicitParamBindDIdKey, kiSigDIdKey, defaultDIdKey, pragOpaqueDIdKey,
-    typeDataDIdKey, pragSCCFunDKey, pragSCCFunNamedDKey :: Unique
+    typeDataDIdKey, pragSCCFunDKey, pragSCCFunNamedDKey, pragAutodiffDKey,
+    pragAutodiffNamedDKey :: Unique
 funDIdKey                         = mkPreludeMiscIdUnique 320
 valDIdKey                         = mkPreludeMiscIdUnique 321
 dataDIdKey                        = mkPreludeMiscIdUnique 322
@@ -993,6 +997,8 @@ pragOpaqueDIdKey                  = mkPreludeMiscIdUnique 354
 typeDataDIdKey                    = mkPreludeMiscIdUnique 355
 pragSCCFunDKey                    = mkPreludeMiscIdUnique 356
 pragSCCFunNamedDKey               = mkPreludeMiscIdUnique 357
+pragAutodiffDKey                  = mkPreludeMiscIdUnique 358
+pragAutodiffNamedDKey             = mkPreludeMiscIdUnique 359
 
 -- type Cxt = ...
 cxtIdKey :: Unique

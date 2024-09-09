@@ -229,11 +229,13 @@ import GHC.Unit.Module.Deps
 import GHC.Unit.Module.Status
 import GHC.Unit.Home.ModInfo
 
+import GHC.Types.Basic
 import GHC.Types.Id
 import GHC.Types.SourceError
 import GHC.Types.SafeHaskell
 import GHC.Types.ForeignStubs
 import GHC.Types.Name.Env      ( mkNameEnv )
+import GHC.Types.Name.Occurrence
 import GHC.Types.Var.Env       ( mkEmptyTidyEnv )
 import GHC.Types.Var.Set
 import GHC.Types.Error
@@ -274,7 +276,7 @@ import GHC.SysTools (initSysTools)
 import GHC.SysTools.BaseDir (findTopDir)
 
 import Data.Data hiding (Fixity, TyCon)
-import Data.List        ( nub, isPrefixOf, partition )
+import Data.List        ( nub, isPrefixOf, partition, intercalate )
 import qualified Data.List.NonEmpty as NE
 import Control.Monad
 import Data.IORef
@@ -300,6 +302,9 @@ import GHC.Types.Unique.FM
 import GHC.Types.Unique.DFM
 import GHC.Cmm.Config (CmmConfig)
 
+
+import GHC.Driver.Session (getDynFlags)
+import GHC.Driver.Ppr (showSDoc)
 
 {- **********************************************************************
 %*                                                                      *
@@ -475,6 +480,47 @@ hscRnImportDecls hsc_env0 import_decls = runInteractiveHsc hsc_env0 $ do
 hscParse :: HscEnv -> ModSummary -> IO HsParsedModule
 hscParse hsc_env mod_summary = runHsc hsc_env $ hscParse' mod_summary
 
+addDervNameIfADPragma :: HsDecl GhcPs -> [FastString] -> [FastString]
+addDervNameIfADPragma (SigD _ (AutodiffSig _ _ name _)) collec = name:collec
+addDervNameIfADPragma _                                 collec = collec
+
+getDervFuncNames :: [LHsDecl GhcPs] -> [FastString] -> [FastString]
+getDervFuncNames ((L _ x):xs) collec = getDervFuncNames xs (addDervNameIfADPragma x collec)
+getDervFuncNames [] collec = collec
+
+nlADSrcSpan :: FastString -> SrcSpan
+nlADSrcSpan name = UnhelpfulSpan (UnhelpfulOther (mkFastString ("AD generated derivative function: " ++ (unpackFS name))))
+
+-- TODO: allow ModuleName to be passed.
+mkDervNameRdrName :: FastString -> RdrName
+-- mkDervNameRdrName dervName = Qual (mkModuleName "") (mkVarOccFS dervName)
+mkDervNameRdrName dervName = Unqual (mkVarOccFS dervName)
+
+-- TODO: LHS expr impl based on type analysis
+mkDervFuncs :: [FastString] -> [LHsDecl GhcPs]
+mkDervFuncs (x:xs) = (noLocA (ValD noExtField 
+                                   (FunBind { fun_id = (L (noAnnSrcSpan (nlADSrcSpan x)) (mkDervNameRdrName x))
+                                            , fun_matches = (MG { mg_ext = (Generated OtherExpansion SkipPmc) 
+                                                                , mg_alts = (noLocA []) })
+                                            , fun_ext = noExtField }))):(mkDervFuncs xs)
+mkDervFuncs [] = []
+
+addDerivativeBindings :: Located (HsModule GhcPs) -> Located (HsModule GhcPs)
+addDerivativeBindings (L l m) 
+  = (L l (m { hsmodDecls = (hsmodDecls m) ++ (mkDervFuncs (getDervFuncNames (hsmodDecls m) [])) } ))
+
+getDervNames :: Located (HsModule GhcPs) -> [String]
+getDervNames (L _ m) = map unpackFS (getDervFuncNames (hsmodDecls m) [])
+
+postParseADAction :: ParsedResult -> Hsc ParsedResult
+postParseADAction (ParsedResult pm msgs)
+  = do dflags <- getDynFlags
+       let tgt_funcs = getDervNames (hpm_module pm)
+       liftIO $ putStrLn $ "AD action additions: " ++ (intercalate "," tgt_funcs)
+       let transformed_mod = addDerivativeBindings (hpm_module pm)
+       liftIO $ putStrLn $ "Final Parsed Dump: \n" ++ (showSDoc dflags $ ppr $ transformed_mod)
+       return (ParsedResult pm { hpm_module = transformed_mod } msgs)
+
 -- internal version, that doesn't fail due to -Werror
 hscParse' :: ModSummary -> Hsc HsParsedModule
 hscParse' mod_summary
@@ -561,9 +607,12 @@ hscParse' mod_summary
             let applyPluginAction p opts
                   = parsedResultAction p opts mod_summary
             hsc_env <- getHscEnv
-            (ParsedResult transformed (PsMessages warns errs)) <-
+            init_parse_sum <-
               withPlugins (hsc_plugins hsc_env) applyPluginAction
                 (ParsedResult res (uncurry PsMessages $ getPsMessages pst))
+            
+            (ParsedResult transformed (PsMessages warns errs)) <- 
+              postParseADAction init_parse_sum
 
             logDiagnostics (GhcPsMessage <$> warns)
             unless (isEmptyMessages errs) $ throwErrors (GhcPsMessage <$> errs)

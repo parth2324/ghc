@@ -213,6 +213,7 @@ type family XInlineSig        x
 type family XSpecSig          x
 type family XSpecInstSig      x
 type family XMinimalSig       x
+type family XAutodiffSig      x
 type family XSCCFunSig        x
 type family XCompleteMatchSig x
 type family XXSig             x

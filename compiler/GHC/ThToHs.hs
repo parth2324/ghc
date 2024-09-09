@@ -47,6 +47,7 @@ import GHC.Utils.Lexeme
 import GHC.Utils.Misc
 import GHC.Data.FastString
 import GHC.Utils.Panic
+import GHC.Types.Name.Reader (rdrNameOcc)
 
 import Language.Haskell.Syntax.Basic (FieldLabelString(..))
 
@@ -853,6 +854,10 @@ cvt_conv TH.JavaScript = JavaScriptCallConv
 --              Pragmas
 ------------------------------------------
 
+mkDervName :: GenLocated SrcSpanAnnN RdrName -> Maybe String -> FastString
+mkDervName _ (Just s) = mkFastString s
+mkDervName (L _ x) Nothing = mkFastString ("d" ++ (unpackFS (occNameFS (rdrNameOcc x))))
+
 cvtPragmaD :: Pragma -> CvtM (Maybe (LHsDecl GhcPs))
 cvtPragmaD (InlineP nm inline rm phases)
   = do { -- NB: Use vcNameN here, which works for both the variable namespace
@@ -955,6 +960,19 @@ cvtPragmaD (CompleteP cls mty)
        ; mty'  <- traverse tconNameN mty
        ; returnJustLA $ Hs.SigD noExtField
                    $ CompleteMatchSig (noAnn, NoSourceText) cls' mty' }
+
+cvtPragmaD (AutodiffP nm str) 
+  = do { nm' <- vcNameN nm
+       ; let str' = mkDervName nm' str
+      --  ; str' <- traverse (\s -> returnLA $ StringLiteral NoSourceText (mkFastString s) Nothing) str
+       ; let srcTxt = SourceText $ fsLit "{-# AUTODIFF"
+       ; let ip = InlinePragma { inl_src    = srcTxt
+                               , inl_inline = Opaque srcTxt
+                               , inl_rule   = Hs.FunLike
+                               , inl_act    = NeverActive
+                               , inl_sat    = Nothing }
+       ; returnJustLA $ Hs.SigD noExtField $ AutodiffSig (noAnn, srcTxt) nm' str' ip }
+
 cvtPragmaD (SCCP nm str) = do
   nm' <- vcNameN nm
   str' <- traverse (\s ->

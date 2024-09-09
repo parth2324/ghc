@@ -1815,6 +1815,11 @@ instance HiePass p => ToHie (SigContext (LocatedA (Sig (GhcPass p)))) where
         MinimalSig _ form ->
           [ toHie form
           ]
+        AutodiffSig _ name dervlabel _ ->
+          [ toHie $ (C Use) name
+          -- , (pure []) (locOnly . getLocA) dervlabel
+          -- TODO: ReaderT NodeOrigin (State HieState) [HieAST Type]’
+          ]
         SCCFunSig _ name mtxt ->
           [ toHie $ (C Use) name
           , maybe (pure []) (locOnly . getLocA) mtxt

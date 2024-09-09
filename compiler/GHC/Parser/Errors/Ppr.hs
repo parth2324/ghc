@@ -178,6 +178,8 @@ instance Diagnostic PsMessage where
       -> mkSimpleDecorated $ text "Expected a hyphen"
     PsErrSpaceInSCC
       -> mkSimpleDecorated $ text "Spaces are not allowed in SCCs"
+    PsErrSpaceInAutoDiff
+      -> mkSimpleDecorated $ text "Spaces are not allowed in derivative names for AutoDiff"
     PsErrEmptyDoubleQuotes _th_on
       -> mkSimpleDecorated $ vcat msg
          where
@@ -565,6 +567,7 @@ instance Diagnostic PsMessage where
     PsErrInvalidInfixHole                         -> ErrorWithoutFlag
     PsErrExpectedHyphen                           -> ErrorWithoutFlag
     PsErrSpaceInSCC                               -> ErrorWithoutFlag
+    PsErrSpaceInAutoDiff                          -> ErrorWithoutFlag
     PsErrEmptyDoubleQuotes{}                      -> ErrorWithoutFlag
     PsErrLambdaCase{}                             -> ErrorWithoutFlag
     PsErrEmptyLambda{}                            -> ErrorWithoutFlag
@@ -698,6 +701,7 @@ instance Diagnostic PsMessage where
     PsErrInvalidInfixHole                         -> noHints
     PsErrExpectedHyphen                           -> noHints
     PsErrSpaceInSCC                               -> noHints
+    PsErrSpaceInAutoDiff                          -> noHints
     PsErrEmptyDoubleQuotes th_on | th_on          -> [SuggestThQuotationSyntax]
                                  | otherwise      -> noHints
     PsErrLambdaCase{}                             -> [suggestExtension LangExt.LambdaCase]
